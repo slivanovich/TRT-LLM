@@ -4,9 +4,9 @@
 
 echo "Creating volumes..."
 docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/test" test_volume
-docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/tree/TensorRT-LLM" trt-llm
-docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/tree/models/gemma-2b" gemma_2B
-docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/tree/models/Qwen2.5-Coder-0.5B" qwen_0.5B
+docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/TensorRT-LLM" trt-llm
+docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/models/gemma-2b" gemma_2B
+docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/models/Qwen2.5-Coder-0.5B" qwen_0.5B
 
 # Already installed locally (nvidia toolkit for docker, etc.)
 # echo "Installing nvidia-container-toolkit..."
