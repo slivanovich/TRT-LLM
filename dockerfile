@@ -2,53 +2,82 @@ FROM nvidia/cuda:12.6.1-devel-ubuntu22.04
 
 WORKDIR /TRT-LLM
 
+COPY requirements.txt .
+
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Etc/UTC
+
+ENV CUDA_HOME=/usr/local/cuda-12.6
+ENV PATH=${CUDA_HOME}/bin${PATH:+:${PATH}}
+ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+ENV CPLUS_INCLUDE_PATH=${CUDA_HOME}/include
 
 # RUN apt-get update
 # RUN apt-get install -y software-properties-common
 # RUN add-apt-repository -y ppa:nilarimogard/webupd8
 # RUN apt-get update
 # RUN apt-get install -y launchpad-getkeys
-
 # RUN launchpad-getkeys
-RUN apt-get update --fix-missing
 
-RUN apt-get install -y build-essential git git-lfs cmake wget vim
-RUN apt-get install -y python3.10 python3-pip openmpi-bin libopenmpi-dev pciutils
-RUN apt-get clean
+# problem with updating -- while updating trying to fetch https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/InRelease (failed cuz no VPN)
+RUN apt-get update --fix-missing; exit 0
+
+RUN apt-get install -y build-essential zlib1g-dev \
+libncurses5-dev libgdbm-dev libnss3-dev \
+libssl-dev libreadline-dev libffi-dev curl software-properties-common
+
+# Python 3.9.0 (breakin nvidia image after that)
+# COPY Python-3.9.0.tar.xz .
+# RUN tar -xf Python-3.9.0.tar.xz
+# RUN cd Python-3.9.0 && ./configure && make altinstall
+# RUN rm /usr/bin/python3
+# RUN ln -s /usr/local/bin/python3.9 /usr/bin/python3
+# RUN ln -s /usr/share/pyshared/lsb_release.py /usr/local/lib/python3.9/site-packages/lsb_release.py
+# RUN echo "alias python3='/usr/local/bin/python3.9'" >> ~/.bashrc_aliases
+# RUN alias python3='/usr/local/bin/python3.9'
+
+COPY cmake-3.31.4.tar.gz .
+RUN apt-get purge cmake; exit 0
+RUN tar -xf cmake-3.31.4.tar.gz
+RUN cd cmake-3.31.4 && ./bootstrap && make && make install
+RUN hash -r
+
+RUN apt-get update --fix-missing; exit 0
+RUN apt-get install -y git git-lfs vim wget
+RUN apt-get install -y python3.10 python3-pip pciutils libucx-dev
 
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install wheel
-RUN python3 -m pip install numpy onnx
 
-# RUN pip cache remove "tensorrt*"
-# RUN python3 -m pip install --upgrade tensorrt
-# RUN python3 -m pip install tensorrt_llm
-# RUN pip3 install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
+RUN wget https://pypi.nvidia.com/libucxx-cu12/libucxx_cu12-0.41.0-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+RUN python3 -m pip install libucxx_cu12-0.41.0-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
 
-# COPY nv_tensorrt_repo_ubuntu2004_cuda11_6_trt8_4_2_4_ga_20220720_1_1.deb .
-# RUN dpkg -i nv_tensorrt_repo_ubuntu2004_cuda11_6_trt8_4_2_4_ga_20220720_1_1.deb
-# RUN cp /var/nv_tensorrt_repo_ubuntu2004_cuda11_6_trt8_4_2_4_ga_20220720_1_1/*-keyring.gpg /usr/share/keyrings/
-# RUN apt-key add /var/nv-tensorrt-repo-ubuntu2004-cuda11.6-trt8.4.2.4-ga-20220720/7fd57a00.pub
-# RUN apt-get update
-# RUN apt-get install tensorrt
+COPY nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6_1.0-1_amd64.deb .
+RUN dpkg -i nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6_1.0-1_amd64.deb
+RUN cp /var/nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6/*-keyring.gpg /usr/share/keyrings/
+RUN apt-get update
+RUN apt-get install -y tensorrt
+RUN hash -r
 
-COPY TensorRT_8_4_3_1_Ubuntu_20_04_aarch64_gnu_cuda_11_6_cudnn8_4_tar.gz .
-RUN tar -xzvf TensorRT_8_4_3_1_Ubuntu_20_04_aarch64_gnu_cuda_11_6_cudnn8_4_tar.gz
-RUN export LD_LIBRARY_PATH=/TRT-LLM/TensorRT-8.4.3.1/lib:/usr/local/cuda-11.6/lib64
+# COPY TensorRT-10.7.0.23.Linux.x86_64-gnu.cuda-12.6.tar.gz .
+# RUN tar -xvzf TensorRT-10.7.0.23.Linux.x86_64-gnu.cuda-12.6.tar.gz
+# RUN cd TensorRT-10.7.0.23/python && python3 -m pip install tensorrt-*-cp310-none-linux_x86_64.whl
+
+RUN apt-get update --fix-missing; exit 0
+RUN apt-get install -y openmpi-bin libopenmpi-dev
+
+RUN python3 -m pip install -r requirements.txt
+RUN rm requirements.txt
+
+RUN python3 -m pip install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
 
 # RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git
 # RUN cd TensorRT-LLM && git submodule update --init --recursive
 # RUN cd TensorRT-LLM && git lfs install
 # RUN cd TensorRT-LLM && git lfs pull
 
-# COPY ./CMakeLists.txt ./TensorRT-LLM/examples/cpp/executor/
+RUN apt-get clean
 
-COPY requirements.txt .
-# RUN python3 -m pip install -r requirements.txt
-# RUN rm requirements.txt
+RUN cd TensorRT-LLM && ls -la cpp/build && rm cpp/build -r; exit 0
 
-# RUN cd TensorRT-LLM && ls -la cpp/build && rm cpp/build -r
-# RUN export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu"
-# RUN cd TensorRT-LLM && ./scripts/build_wheel.py --cuda_architectures "80-real" --clean
+RUN cd TensorRT-LLM && python3 ./scripts/build_wheel.py --cuda_architectures "80-real;86-real" --clean

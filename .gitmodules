@@ -1,6 +1,4 @@
 [submodule "volumes/TensorRT-LLM"]
 	path = volumes/TensorRT-LLM
 	url = https://github.com/NVIDIA/TensorRT-LLM.git
-[submodule "volumes/models/Qwen2.5-Coder-0.5B"]
-	path = volumes/models/Qwen2.5-Coder-0.5B
-	url = https://huggingface.co/Qwen/Qwen2.5-Coder-0.5B
+
