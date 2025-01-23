@@ -34,7 +34,8 @@ docker build -t test .
 echo "Running docker..."
 # --env NVIDIA_DISABLE_REQUIRE=1
 # --ulimit memlock=-1 --ulimit stack=67108864
-docker run -v "trt-llm:/TRT-LLM/TensorRT-LLM" -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --ipc=host --gpus=all --runtime=nvidia -it test
+# --ipc=host
+docker run -v "trt-llm:/TRT-LLM/TensorRT-LLM" -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --gpus=all --runtime=nvidia --entrypoint /bin/bash --shm-size 16g -it test
 
 # Useful links:
 #   1080ti issues:

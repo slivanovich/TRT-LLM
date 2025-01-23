@@ -36,7 +36,7 @@ libssl-dev libreadline-dev libffi-dev curl software-properties-common
 # RUN echo "alias python3='/usr/local/bin/python3.9'" >> ~/.bashrc_aliases
 # RUN alias python3='/usr/local/bin/python3.9'
 
-COPY cmake-3.31.4.tar.gz .
+COPY .cache/cmake-3.31.4.tar.gz .
 RUN apt-get purge cmake; exit 0
 RUN tar -xf cmake-3.31.4.tar.gz
 RUN cd cmake-3.31.4 && ./bootstrap && make && make install
@@ -52,7 +52,7 @@ RUN python3 -m pip install wheel
 RUN wget https://pypi.nvidia.com/libucxx-cu12/libucxx_cu12-0.41.0-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
 RUN python3 -m pip install libucxx_cu12-0.41.0-py3-none-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
 
-COPY nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6_1.0-1_amd64.deb .
+COPY .cache/nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6_1.0-1_amd64.deb .
 RUN dpkg -i nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6_1.0-1_amd64.deb
 RUN cp /var/nv-tensorrt-local-repo-ubuntu2204-10.7.0-cuda-12.6/*-keyring.gpg /usr/share/keyrings/
 RUN apt-get update
@@ -65,19 +65,18 @@ RUN hash -r
 
 RUN apt-get update --fix-missing; exit 0
 RUN apt-get install -y openmpi-bin libopenmpi-dev
+RUN apt-get clean
 
 RUN python3 -m pip install -r requirements.txt
 RUN rm requirements.txt
 
 RUN python3 -m pip install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
 
-# RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git
-# RUN cd TensorRT-LLM && git submodule update --init --recursive
-# RUN cd TensorRT-LLM && git lfs install
-# RUN cd TensorRT-LLM && git lfs pull
+RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git
+WORKDIR /TRT-LLM/TensorRT-LLM
+RUN git submodule update --init --recursive
+RUN git lfs install
+RUN git lfs pull
 
-RUN apt-get clean
-
-RUN cd TensorRT-LLM && ls -la cpp/build && rm cpp/build -r; exit 0
-
-RUN cd TensorRT-LLM && python3 ./scripts/build_wheel.py --cuda_architectures "80-real;86-real" --clean
+RUN rm cpp/build -r; exit 0
+RUN python3 scripts/build_wheel.py --cuda_architectures "80-real;86-real" --clean
