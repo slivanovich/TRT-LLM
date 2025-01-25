@@ -9,8 +9,8 @@ ENV TZ=Etc/UTC
 
 ENV CUDA_HOME=/usr/local/cuda-12.6
 ENV PATH=${CUDA_HOME}/bin${PATH:+:${PATH}}
-ENV LD_LIBRARY_PATH=${CUDA_HOME}/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
-ENV CPLUS_INCLUDE_PATH=${CUDA_HOME}/include
+ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:${CUDA_HOME}/compat:${CUDA_HOME}/lib64${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}
+# ENV CPLUS_INCLUDE_PATH=${CUDA_HOME}/include
 
 # RUN apt-get update
 # RUN apt-get install -y software-properties-common
@@ -79,4 +79,10 @@ RUN git lfs install
 RUN git lfs pull
 
 RUN rm cpp/build -r; exit 0
-RUN python3 scripts/build_wheel.py --cuda_architectures "80-real;86-real" --clean
+RUN python3 scripts/build_wheel.py --cuda_architectures "80-real" --clean
+
+ENV TRTLLM_PATH=/TRT-LLM/TensorRT-LLM
+ENV MODELS_PATH=/TRT-LLM/models
+
+WORKDIR /TRT-LLM
+COPY build_* .

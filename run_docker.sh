@@ -5,7 +5,7 @@
 echo "Creating volumes..."
 # docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/test" test_volume
 # docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/TensorRT-10.7.0.23" trt
-docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/TensorRT-LLM" trt-llm
+# docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/TensorRT-LLM" trt-llm
 docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/models/gemma-2b" gemma_2B
 docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/models/Qwen2.5-Coder-0.5B" qwen_0.5B
 
@@ -35,7 +35,7 @@ echo "Running docker..."
 # --env NVIDIA_DISABLE_REQUIRE=1
 # --ulimit memlock=-1 --ulimit stack=67108864
 # --ipc=host
-docker run -v "trt-llm:/TRT-LLM/TensorRT-LLM" -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --gpus=all --runtime=nvidia --entrypoint /bin/bash --shm-size 16g -it test
+docker run -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --gpus=all --runtime=nvidia --entrypoint /bin/bash --shm-size 16g -it test
 
 # Useful links:
 #   1080ti issues:
@@ -50,5 +50,6 @@ docker run -v "trt-llm:/TRT-LLM/TensorRT-LLM" -v "qwen_0.5B:/TRT-LLM/models/qwen
 #       1) https://nvidia.github.io/TensorRT-LLM/performance/perf-best-practices.html
 #   General:
 #       1) https://github.com/NVIDIA/TensorRT-LLM/issues/22
+#       2) Multi-instance build does not working (~~ https://github.com/NVIDIA/FasterTransformer/pull/616)
 #   Where are my packages??:
 #       1) https://forums.developer.nvidia.com/t/where-is-tensorrt-located-in-an-ubuntu-16-04-dpkg-installation/69042
