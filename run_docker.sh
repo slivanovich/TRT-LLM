@@ -1,13 +1,18 @@
+#!/bin/bash
+
 # echo "Resetting GPU..."
 # sudo rmmod nvidia_uvm
 # sudo modprobe nvidia_uvm
 
+export PROJECT_PATH=/home/slivanovich/TRT-LLM
+
 echo "Creating volumes..."
-# docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/test" test_volume
-# docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/TensorRT-10.7.0.23" trt
-# docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/TensorRT-LLM" trt-llm
-docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/models/gemma-2b" gemma_2B
-docker volume create --driver local -o o=bind -o type=none -o device="/home/slivanovich/TRT-LLM/volumes/models/Qwen2.5-Coder-0.5B" qwen_0.5B
+# docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/volumes/test" test_volume
+# docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/volumes/TensorRT-10.7.0.23" trt
+# docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/volumes/TensorRT-LLM" trt-llm
+docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/data/models/gemma-2b" gemma_2B
+docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/data/models/Qwen2.5-Coder-0.5B" qwen_0.5B
+docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/src" src
 
 # Already installed locally (nvidia container toolkit for docker)
 # echo "Installing nvidia-container-toolkit..."
@@ -21,12 +26,12 @@ docker volume create --driver local -o o=bind -o type=none -o device="/home/sliv
 # sudo nvidia-ctk runtime configure --runtime=docker
 # sudo systemctl restart docker
 
-touch requirements_.txt
-echo "" > requirements_.txt
-echo "Copying requirements for qwen model (bad due to absolut path to volume dir)..."
-cat /home/slivanovich/TRT-LLM/volumes/TensorRT-LLM/examples/qwen/requirements.txt >> requirements_.txt
-tail -n +3 requirements_.txt > requirements.txt
-rm requirements_.txt
+echo "Collecting requirements for qwen model..."
+touch ${PROJECT_PATH}/requirements_.txt
+echo "" > ${PROJECT_PATH}/requirements_.txt
+cat ${PROJECT_PATH}/data/TensorRT-LLM/examples/qwen/requirements.txt >> ${PROJECT_PATH}/requirements_.txt
+tail -n +3 ${PROJECT_PATH}/requirements_.txt > ${PROJECT_PATH}/requirements.txt
+rm ${PROJECT_PATH}/requirements_.txt
 
 echo "Building docker..."
 docker build -t test .
@@ -35,7 +40,8 @@ echo "Running docker..."
 # --env NVIDIA_DISABLE_REQUIRE=1
 # --ulimit memlock=-1 --ulimit stack=67108864
 # --ipc=host
-docker run -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --gpus=all --runtime=nvidia --entrypoint /bin/bash --shm-size 16g -it test
+# --shm-size 16g
+docker run -v "src:/TRT-LLM/src" -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 --gpus=all --runtime=nvidia --entrypoint /bin/bash -it test
 
 # Useful links:
 #   1080ti issues:

@@ -2,5 +2,7 @@
 .vscode
 cmake-*
 TensorRT-*
+data/models/*
 test.sh
-volumes/models/*
+src/*/build
+src/*/.build

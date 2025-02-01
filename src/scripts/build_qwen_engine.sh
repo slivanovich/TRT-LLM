@@ -54,7 +54,7 @@ else
                                   --dtype float16 \
                                   --use_weight_only \
                                   --weight_only_precision ${weights_quantization}
-
+                                  
     trtllm-build --checkpoint_dir ${checkpoint_dir} \
                  --output_dir ${output_dir} \
                  --gemm_plugin float16
