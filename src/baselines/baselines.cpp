@@ -1,66 +1,8 @@
-#ifndef BASELINES_HPP
-#define BASELINES_HPP
+#include "baselines.hpp"
 
-#include <cxxopts.hpp>
-#include <filesystem>
-#include <fstream>
-#include <stdexcept>
-#include <string>
-#include <unordered_map>
-
-#include "tensorrt_llm/common/assert.h"
-#include "tensorrt_llm/common/logger.h"
-#include "tensorrt_llm/executor/executor.h"
-#include "tensorrt_llm/plugins/api/tllmPlugin.h"
-
-namespace trt_executor = tensorrt_llm::executor;
-
-struct RuntimeOptions {
-    std::string enginePath;
-    std::string inputFilePath;
-    std::string outputFilePath;
-
-    size_t timeout;
-    size_t maxOutputTokens;
-
-    const size_t beamWidth = 1;
-
-    // std::optional<size_t> numReturnSequences;
-};
-
-RuntimeOptions parseArgs(int argc, char *argv[]);
-
-std::vector<trt_executor::IdType> enqueueRequests(RuntimeOptions const &runtimeOpts, trt_executor::Executor &executor);
-
-std::vector<trt_executor::VecTokens> readInputTokens(std::string const &path);
-
-std::unordered_map<trt_executor::IdType, trt_executor::BeamTokens>
-waitForResponses(RuntimeOptions const &runtimeOptions, std::vector<trt_executor::IdType> const &requestIds,
-                 trt_executor::Executor &executor);
-
-void writeOutputTokens(std::string const &path, std::vector<trt_executor::IdType> &requestIds,
-                       std::unordered_map<trt_executor::IdType, trt_executor::BeamTokens> const &outputTokens,
-                       trt_executor::SizeType32 beamWidth);
-
-int main(int argc, char *argv[]) {
-    initTrtLlmPlugins();
-
-    auto runtimeOptions = parseArgs(argc, argv);
-    auto executorConfig = trt_executor::ExecutorConfig(runtimeOptions.beamWidth);
-    auto executor =
-        trt_executor::Executor(runtimeOptions.enginePath, trt_executor::ModelType::kDECODER_ONLY, executorConfig);
-
-    if (executor.canEnqueueRequests()) {
-        auto requestIds = enqueueRequests(runtimeOptions, executor);
-        std::cout << requestIds.size() << std::endl;
-        auto outputTokens = waitForResponses(runtimeOptions, requestIds, executor);
-
-        TLLM_LOG_INFO("Writing output tokens to %s", runtimeOptions.outputFilePath.c_str());
-        writeOutputTokens(runtimeOptions.outputFilePath, requestIds, outputTokens, runtimeOptions.beamWidth);
-    } else {
-        exit(2);
-    }
-    return 0;
+uint64_t getTimeInMs() {
+    using namespace std::chrono;
+    return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
 RuntimeOptions parseArgs(int argc, char *argv[]) {
@@ -79,12 +21,15 @@ RuntimeOptions parseArgs(int argc, char *argv[]) {
     auto parsedOptions = options.parse(argc, argv);
 
     if (parsedOptions.count("help")) {
+        Logger::getInstance().info(options.help());
         TLLM_LOG_INFO(options.help());
         exit(0);
     }
 
     if (!parsedOptions.count("engine_path")) {
+        Logger::getInstance().error(options.help());
         TLLM_LOG_ERROR(options.help());
+        Logger::getInstance().error("Please specify engine directory.");
         TLLM_LOG_ERROR("Please specify engine directory.");
         exit(1);
     }
@@ -94,6 +39,7 @@ RuntimeOptions parseArgs(int argc, char *argv[]) {
         std::cout << runtimeOptions.enginePath << std::endl;
         if (!std::filesystem::exists(runtimeOptions.enginePath) ||
             !std::filesystem::is_directory(runtimeOptions.enginePath)) {
+            Logger::getInstance().error("Engine directory doesn't exist.");
             TLLM_LOG_ERROR("Engine directory doesn't exist.");
             exit(1);
         }
@@ -103,7 +49,9 @@ RuntimeOptions parseArgs(int argc, char *argv[]) {
     }
 
     if (!parsedOptions.count("input_file_path")) {
+        Logger::getInstance().error(options.help());
         TLLM_LOG_ERROR(options.help());
+        Logger::getInstance().error("Please specify input_file_path");
         TLLM_LOG_ERROR("Please specify input_file_path");
         exit(1);
     }
@@ -115,41 +63,51 @@ RuntimeOptions parseArgs(int argc, char *argv[]) {
         runtimeOptions.timeout = parsedOptions["timeout"].as<size_t>();
         runtimeOptions.maxOutputTokens = parsedOptions["max_output_tokens"].as<size_t>();
     } catch (std::exception &e) {
+        Logger::getInstance().error(e.what());
         std::cout << e.what() << std::endl;
         exit(1);
     }
 
+    runtimeOptions.metrics = Metrics();
     return runtimeOptions;
 }
 
-std::vector<trt_executor::IdType> enqueueRequests(RuntimeOptions const &runtimeOpts, trt_executor::Executor &executor) {
+std::vector<trt_executor::IdType> enqueueRequests(RuntimeOptions &runtimeOpts, trt_executor::Executor &executor) {
     trt_executor::OutputConfig outputConfig;
     trt_executor::SamplingConfig samplingConfig(runtimeOpts.beamWidth);
 
     samplingConfig.setNumReturnSequences(1);
     outputConfig.excludeInputFromOutput = false;
 
+    Logger::getInstance().info("Reading input tokens from " + runtimeOpts.inputFilePath);
     TLLM_LOG_INFO("Reading input tokens from %s", runtimeOpts.inputFilePath.c_str());
-    auto inputTokens = readInputTokens(runtimeOpts.inputFilePath);
+    auto inputTokens = readInputTokens(runtimeOpts.inputFilePath, runtimeOpts.metrics);
+    Logger::getInstance().info("Number of requests: " + std::to_string(inputTokens.size()));
     TLLM_LOG_INFO("Number of requests: %d", inputTokens.size());
 
     std::vector<trt_executor::Request> requests;
     for (auto &tokens : inputTokens) {
+        Logger::getInstance().info("Creating request with " + std::to_string(tokens.size()) + " input tokens");
         TLLM_LOG_INFO("Creating request with %d input tokens", tokens.size());
         requests.emplace_back(std::move(tokens), runtimeOpts.maxOutputTokens, false, samplingConfig, outputConfig);
     }
 
+    runtimeOpts.metrics.startTime = getTimeInMs();
     auto requestIds = executor.enqueueRequests(std::move(requests));
 
     return requestIds;
 }
 
-std::vector<trt_executor::VecTokens> readInputTokens(std::string const &path) {
+std::vector<trt_executor::VecTokens> readInputTokens(std::string const &path, Metrics &metrics) {
     std::ifstream file(path);
     std::vector<trt_executor::VecTokens> data;
 
+    metrics.totalInputTokens = 0;
+
     if (!file.is_open()) {
         const auto err = std::string{"Failed to open file: "} + path;
+        Logger::getInstance().error(err);
+        Logger::getInstance().breakPipeline(err);
         TLLM_LOG_ERROR(err);
         TLLM_THROW(err);
     }
@@ -162,17 +120,20 @@ std::vector<trt_executor::VecTokens> readInputTokens(std::string const &path) {
 
         while (std::getline(ss, token, ',')) {
             try {
+                metrics.totalInputTokens++;
                 row.push_back(std::stoi(token));
             } catch (std::invalid_argument const &e) {
+                Logger::getInstance().error("Invalid argument: " + std::string(e.what()));
                 TLLM_LOG_ERROR("Invalid argument: %s", e.what());
             } catch (std::out_of_range const &e) {
+                Logger::getInstance().error("Out of range: " + std::string(e.what()));
                 TLLM_LOG_ERROR("Out of range: %s", e.what());
             }
         }
         data.push_back(row);
     }
-    file.close();
 
+    file.close();
     return data;
 }
 
@@ -182,6 +143,7 @@ void writeOutputTokens(std::string const &path, std::vector<trt_executor::IdType
     std::ofstream file(path);
 
     if (!file.is_open()) {
+        Logger::getInstance().error("Failed to open file " + path);
         TLLM_LOG_ERROR("Failed to open file %s", path.c_str());
         return;
     }
@@ -203,7 +165,7 @@ void writeOutputTokens(std::string const &path, std::vector<trt_executor::IdType
 }
 
 std::unordered_map<trt_executor::IdType, trt_executor::BeamTokens>
-waitForResponses(RuntimeOptions const &runtimeOpts, std::vector<trt_executor::IdType> const &requestIds,
+waitForResponses(RuntimeOptions &runtimeOpts, std::vector<trt_executor::IdType> const &requestIds,
                  trt_executor::Executor &executor) {
     // Map that will be used to store output tokens for requests
     std::unordered_map<trt_executor::IdType, trt_executor::BeamTokens> outputTokens;
@@ -221,22 +183,32 @@ waitForResponses(RuntimeOptions const &runtimeOpts, std::vector<trt_executor::Id
         std::chrono::milliseconds waitTime(1);
         auto responses = executor.awaitResponses(waitTime);
 
-        auto insertResponseTokens = [&outputTokens](trt_executor::IdType requestId, trt_executor::SizeType32 seqIdx,
-                                                    trt_executor::VecTokens const &respTokens) {
+        auto insertResponseTokens = [&outputTokens, &runtimeOpts](trt_executor::IdType requestId,
+                                                                  trt_executor::SizeType32 seqIdx,
+                                                                  trt_executor::VecTokens const &respTokens) {
+            Logger::getInstance().info("Got " + std::to_string(respTokens.size()) + " tokens for seqIdx " +
+                                       std::to_string(seqIdx) + " for requestId " + std::to_string(requestId));
             TLLM_LOG_INFO("Got %d tokens for seqIdx %d for requestId %d", respTokens.size(), seqIdx, requestId);
 
             // Store the output tokens for that request id
             auto &outTokens = outputTokens.at(requestId).at(seqIdx);
             outTokens.insert(outTokens.end(), std::make_move_iterator(respTokens.begin()),
                              std::make_move_iterator(respTokens.end()));
+            runtimeOpts.metrics.totalOutputTokens += respTokens.size();
         };
 
         // Loop over the responses
         for (auto const &response : responses) {
             auto requestId = response.getRequestId();
+
             if (!response.hasError()) {
                 auto result = response.getResult();
+
+                if (numFinished == 0) {
+                    runtimeOpts.metrics.TTFT = getTimeInMs() - runtimeOpts.metrics.startTime;
+                }
                 numFinished += result.isFinal;
+
                 if (runtimeOpts.beamWidth > 1) {
                     for (trt_executor::SizeType32 beam = 0; beam < numSequences; beam++) {
                         insertResponseTokens(requestId, beam, result.outputTokenIds.at(beam));
@@ -245,6 +217,7 @@ waitForResponses(RuntimeOptions const &runtimeOpts, std::vector<trt_executor::Id
                     insertResponseTokens(requestId, result.sequenceIndex, result.outputTokenIds.at(0));
                 }
                 if (result.isFinal) {
+                    Logger::getInstance().info("Request id " + std::to_string(requestId) + " is completed.");
                     TLLM_LOG_INFO("Request id %lu is completed.", requestId);
                 }
             } else {
@@ -252,6 +225,8 @@ waitForResponses(RuntimeOptions const &runtimeOpts, std::vector<trt_executor::Id
                 std::string err = "ReqId " + std::to_string(response.getRequestId()) +
                                   " has already been processed and was terminated.";
                 if (response.getErrorMsg() != err) {
+                    Logger::getInstance().breakPipeline("Request id " + std::to_string(requestId) +
+                                                        " encountered error: " + response.getErrorMsg());
                     TLLM_THROW("Request id %lu encountered error: %s", requestId, response.getErrorMsg().c_str());
                 }
             }
@@ -259,10 +234,9 @@ waitForResponses(RuntimeOptions const &runtimeOpts, std::vector<trt_executor::Id
         ++iter;
     }
     if (iter == runtimeOpts.timeout) {
+        Logger::getInstance().breakPipeline("Timeout exceeded.");
         TLLM_THROW("Timeout exceeded.");
     }
 
     return outputTokens;
 }
-
-#endif // BASELINES_HPP

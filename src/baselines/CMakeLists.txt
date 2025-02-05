@@ -85,5 +85,7 @@ if(NOT TARGET cxxopts::cxxopts)
   add_subdirectory(${CXXOPTS_SRC_DIR} ${CMAKE_CURRENT_BINARY_DIR}/cxxopts)
 endif()
 
-add_executable(baselines baselines.cpp)
+include_directories("/TRT-LLM/src/logger")
+
+add_executable(baselines main.cpp baselines.cpp ../logger/logger.cpp)
 target_link_libraries(baselines nvinfer_plugin_tensorrt_llm cxxopts::cxxopts)

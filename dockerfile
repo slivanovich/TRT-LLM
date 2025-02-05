@@ -65,11 +65,9 @@ RUN cp /var/nv-tensorrt-local-repo-ubuntu2204-10.8.0-cuda-12.8/*-keyring.gpg /us
 RUN apt-get update
 RUN apt-get install -y tensorrt
 
-# Verifing tensorrt installation
-# RUN dpkg-query -W tensorrt
 
-RUN python3 -m pip install --upgrade tensorrt
-RUN hash -r
+# RUN python3 -m pip install --upgrade tensorrt
+# RUN hash -r
 
 RUN apt-get update --fix-missing; exit 0
 RUN apt-get install -y openmpi-bin
@@ -77,8 +75,8 @@ RUN apt-get install -y openmpi-bin
 RUN python3 -m pip install -r requirements.txt
 RUN rm requirements.txt
 
-RUN apt-get -y install libopenmpi-dev && pip3 install tensorrt_llm
-# RUN python3 -m pip install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
+# RUN apt-get -y install libopenmpi-dev && pip3 install tensorrt_llm
+RUN apt-get -y install libopenmpi-dev && python3 -m pip install tensorrt_llm -U --pre --extra-index-url https://pypi.nvidia.com
 
 RUN git clone https://github.com/NVIDIA/TensorRT-LLM.git
 WORKDIR /TRT-LLM/TensorRT-LLM
@@ -90,3 +88,18 @@ RUN python3 scripts/build_wheel.py --clean
 RUN python3 -m pip install ./build/tensorrt_llm*.whl
 
 WORKDIR /TRT-LLM
+
+RUN dpkg -i nv-tensorrt-local-repo-ubuntu2204-10.8.0-cuda-12.8_1.0-1_amd64.deb
+RUN cp /var/nv-tensorrt-local-repo-ubuntu2204-10.8.0-cuda-12.8/*-keyring.gpg /usr/share/keyrings/
+RUN apt-get update
+RUN apt-get install -y tensorrt
+
+# Verifing tensorrt installation
+# RUN dpkg-query -W tensorrt
+# RUN pip list | grep tensorrt
+
+RUN python3 -m pip install --upgrade tensorrt
+RUN hash -r
+RUN apt-get update --fix-missing
+
+# ./baselines/build/baselines --engine_path /TRT-LLM/models/qwen-0.5b/engine/ --input_file_path /TRT-LLM/TensorRT-LLM/examples/cpp/executor/inputTokens.csv

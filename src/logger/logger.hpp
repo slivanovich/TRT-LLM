@@ -4,6 +4,7 @@
 #include <ctime>
 #include <fstream>
 #include <iostream>
+#include <mutex>
 
 class Logger {
   public:
@@ -14,6 +15,7 @@ class Logger {
     Mode logMode;
     std::string logFilePath;
     std::ofstream logFile;
+    std::mutex mutex;
 
     explicit Logger() : logFilePath("") {}
 
@@ -40,8 +42,8 @@ class Logger {
     const std::string &getFilePath() const { return logFilePath; }
     const Mode &getMode() const { return logMode; }
 
-    void setFilePath(const std::string logFilePath_) {
-        if (!closeLogFile(logFilePath)) {
+    void setFilePath(const std::string &logFilePath_) {
+        if (logFilePath != "" && !closeLogFile(logFilePath)) {
             std::cerr << "Failed while closing file: \"" << logFilePath << "\"" << std::endl;
         }
         if (openLogFile(logFilePath_)) {
