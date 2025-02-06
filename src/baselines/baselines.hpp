@@ -23,6 +23,8 @@ uint64_t getTimeInMs();
 
 RuntimeOptions parseArgs(int argc, char *argv[]);
 
+size_t generateRandomDataset(const std::string &inputFilePath, size_t n = 0);
+
 std::vector<trt_executor::IdType> enqueueRequests(RuntimeOptions &runtimeOpts, trt_executor::Executor &executor);
 
 std::vector<trt_executor::VecTokens> readInputTokens(std::string const &path, Metrics &metrics);
@@ -33,6 +35,6 @@ waitForResponses(RuntimeOptions &runtimeOptions, std::vector<trt_executor::IdTyp
 
 void writeOutputTokens(std::string const &path, std::vector<trt_executor::IdType> &requestIds,
                        std::unordered_map<trt_executor::IdType, trt_executor::BeamTokens> const &outputTokens,
-                       trt_executor::SizeType32 beamWidth);
+                       trt_executor::SizeType32 beamWidth, Metrics &metrics);
 
 #endif // BASELINES_HPP

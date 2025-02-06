@@ -11,26 +11,28 @@ struct Metrics {
     size_t totalCompleteRequests;
     size_t totalInputTokens, totalOutputTokens;
 
-    uint64_t ITL;
+    float ITL;
     uint64_t TTFT;
     uint64_t e2eLatency;
 
     float TPS;
     float RPS;
 
-    explicit Metrics()
-        : generationTime(0), startTime(0), endTime(1), totalCompleteRequests(0), totalInputTokens(0),
-          totalOutputTokens(0), ITL(0), TTFT(0), e2eLatency(0), TPS(0.0f), RPS(0.0f) {}
-    ~Metrics() = default;
+    explicit Metrics() { init(); }
 
+    void init();
     void compute();
-    void display();
+    void display(const std::string &filePath = "") const;
+
+    ~Metrics() = default;
 };
 
 struct RuntimeOptions {
     std::string enginePath;
     std::string inputFilePath;
     std::string outputFilePath;
+
+    bool randomDataset;
 
     size_t timeout;
     size_t maxOutputTokens;

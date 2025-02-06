@@ -18,6 +18,7 @@ class Logger {
     std::mutex mutex;
 
     explicit Logger() : logFilePath("") {}
+    explicit Logger(const Mode logMode_) : logMode(logMode_) {}
 
     Logger(Logger const &) = delete;
     Logger &operator=(Logger const &) = delete;
@@ -31,7 +32,7 @@ class Logger {
 
   public:
     static Logger &getInstance(bool isStreaming = false) {
-        static Logger defaultLogger, streamingLogger;
+        static Logger defaultLogger(Mode::Default), streamingLogger(Mode::Streaming);
 
         if (isStreaming) {
             return streamingLogger;
