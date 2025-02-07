@@ -57,17 +57,18 @@ int main(int argc, char *argv[]) {
     auto executor =
         trt_executor::Executor(runtimeOptions.enginePath, trt_executor::ModelType::kDECODER_ONLY, executorConfig);
 
-    for (size_t cnt = 0; cnt < 110; cnt++) {
-        const size_t n = std::max(100 * cnt, (size_t)1);
+    for (size_t cnt = 110; cnt < 501; cnt += 10) {
+        // const size_t n = std::max(100 * cnt, (size_t)1);
+        const size_t n = 1;
         const size_t m = std::max(10 * cnt, (size_t)1);
 
         runtimeOptions.metrics.init();
         runtimeOptions.inputFilePath = "/TRT-LLM/datasets/" + std::to_string(n) + "_" + std::to_string(m) + ".csv";
-        runtimeOptions.maxOutputTokens = m;
+        runtimeOptions.maxOutputTokens = 1024;
 
         if (runtimeOptions.randomDataset) {
             Logger::getInstance(true).info("Random dataset size: " +
-                                           std::to_string(generateRandomDataset(runtimeOptions.inputFilePath, n)));
+                                           std::to_string(generateRandomDataset(runtimeOptions.inputFilePath, n, m)));
         }
 
         if (executor.canEnqueueRequests()) {
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
                               runtimeOptions.metrics);
 
             runtimeOptions.metrics.compute();
-            runtimeOptions.metrics.display("/TRT-LLM/plots/plots_data/" + std::to_string(n) + "_1024.txt");
+            runtimeOptions.metrics.display("/TRT-LLM/plots/plots_data/" + std::to_string(n) + "_" + std::to_string(m) + ".txt");
         } else {
             exit(2);
         }

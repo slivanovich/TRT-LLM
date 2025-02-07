@@ -5,7 +5,7 @@ uint64_t getTimeInMs() {
     return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();
 }
 
-size_t generateRandomDataset(const std::string &inputFilePath, size_t n) {
+size_t generateRandomDataset(const std::string &inputFilePath, size_t n, size_t m) {
     try {
         std::ofstream file(inputFilePath);
 
@@ -14,11 +14,10 @@ size_t generateRandomDataset(const std::string &inputFilePath, size_t n) {
                                                 ", aborting..");
         }
 
-        size_t m;
         n == 0 ? n = std::rand() % (1 << 12) + (1 << 10) : n = std::max(n, (size_t)0);
 
         for (size_t row = 0; row < n; row++) {
-            m = std::rand() % (1 << 6) + (1 << 4);
+            m == 0 ? std::rand() % (1 << 6) + (1 << 4) : m = std::max(m, (size_t)0);
             for (size_t column = 0; column < m; column++) {
                 file << rand() % (1 << 10) + 1;
                 column != m - 1 ? file << ", " : file << "\n";

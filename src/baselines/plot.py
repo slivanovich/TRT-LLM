@@ -107,7 +107,7 @@ e2e_latency = []
 tps = []
 rps = []
 
-for cnt in range(0, 110):
+for cnt in range(0, 600):
     n = 1
     m = max(10 * cnt, 1)
     file_name = f"/home/slivanovich/TRT-LLM/data/plots/plots_data/{n}_{m}.txt"
@@ -140,43 +140,35 @@ if len(ns) == 0:
 
 plt.figure(figsize=(16, 8))
 
-plt.subplot(3, 2, 1)
-plt.plot(m, ttft, marker='o', label='TTFT (sec)')
+plt.subplot(2, 2, 1)
+plt.plot(ms, ttft, marker='o', label='TTFT (sec)')
 plt.title('TTFT vs Request length')
 plt.xlabel('Request length')
 plt.ylabel('TTFT (sec)')
 plt.grid()
 plt.legend()
 
-plt.subplot(3, 2, 2)
-plt.plot(m, e2e_latency, marker='o', color='orange', label='E2E Latency (sec)')
+plt.subplot(2, 2, 2)
+plt.plot(ms, e2e_latency, marker='o', color='orange', label='E2E Latency (sec)')
 plt.title('E2E Latency vs Total Requests')
 plt.xlabel('Request length')
 plt.ylabel('E2E Latency (sec)')
 plt.grid()
 plt.legend()
 
-plt.subplot(3, 2, 3)
-plt.plot(m, itl, marker='o', label='IT Latency (ms)')
+plt.subplot(2, 2, 3)
+plt.plot(ms, itl, marker='o', label='IT Latency (ms)')
 plt.title('IT Latency vs Total Requests')
 plt.xlabel('Request length')
 plt.ylabel('IT Latency (ms)')
 plt.grid()
 plt.legend()
 
-plt.subplot(3, 2, 4)
-plt.plot(m, tps, marker='o', color='orange', label='TPS (t/sec)')
+plt.subplot(2, 2, 4)
+plt.plot(ms, tps, marker='o', color='orange', label='TPS (t/sec)')
 plt.title('TPS vs Total Requests')
 plt.xlabel('Request length')
 plt.ylabel('TPS (t/sec)')
-plt.grid()
-plt.legend()
-
-plt.subplot(3, 2, 6)
-plt.plot(m, rps, marker='o', color='orange', label='RPS (r/sec)')
-plt.title('RPS vs Total Requests')
-plt.xlabel('Request length')
-plt.ylabel('RPS (r/sec)')
 plt.grid()
 plt.legend()
 

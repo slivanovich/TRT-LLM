@@ -23,7 +23,7 @@ uint64_t getTimeInMs();
 
 RuntimeOptions parseArgs(int argc, char *argv[]);
 
-size_t generateRandomDataset(const std::string &inputFilePath, size_t n = 0);
+size_t generateRandomDataset(const std::string &inputFilePath, size_t n = 0, size_t m = 0);
 
 std::vector<trt_executor::IdType> enqueueRequests(RuntimeOptions &runtimeOpts, trt_executor::Executor &executor);
 
