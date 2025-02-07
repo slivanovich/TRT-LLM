@@ -44,7 +44,7 @@ RuntimeOptions parseArgs(int argc, char *argv[]) {
         "timeout", "The maximum time to wait for all responses (in milliseconds)",
         cxxopts::value<size_t>()->default_value("1000000"))("max_output_tokens",
                                                             "The maximum number of tokens to generate",
-                                                            cxxopts::value<size_t>()->default_value("2048"));
+                                                            cxxopts::value<size_t>()->default_value("1024"));
 
     auto parsedOptions = options.parse(argc, argv);
 
@@ -215,8 +215,8 @@ waitForResponses(RuntimeOptions &runtimeOpts, std::vector<trt_executor::IdType> 
 
         auto insertResponseTokens = [&outputTokens](trt_executor::IdType requestId, trt_executor::SizeType32 seqIdx,
                                                     trt_executor::VecTokens const &respTokens) {
-            Logger::getInstance().info("Got " + std::to_string(respTokens.size()) + " tokens for seqIdx " +
-                                       std::to_string(seqIdx) + " for requestId " + std::to_string(requestId));
+            // Logger::getInstance().info("Got " + std::to_string(respTokens.size()) + " tokens for seqIdx " +
+            //                            std::to_string(seqIdx) + " for requestId " + std::to_string(requestId));
             // TLLM_LOG_INFO("Got %d tokens for seqIdx %d for requestId %d", respTokens.size(), seqIdx, requestId);
 
             // Store the output tokens for that request id
@@ -245,7 +245,7 @@ waitForResponses(RuntimeOptions &runtimeOpts, std::vector<trt_executor::IdType> 
                     insertResponseTokens(requestId, result.sequenceIndex, result.outputTokenIds.at(0));
                 }
                 if (result.isFinal) {
-                    Logger::getInstance().info("Request id " + std::to_string(requestId) + " is completed.");
+                    // Logger::getInstance().info("Request id " + std::to_string(requestId) + " is completed.");
                     // TLLM_LOG_INFO("Request id %lu is completed.", requestId);
                 }
             } else {

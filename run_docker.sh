@@ -12,6 +12,8 @@ echo "Creating volumes..."
 # docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/volumes/TensorRT-LLM" trt-llm
 docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/data/models/gemma-2b" gemma_2B
 docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/data/models/Qwen2.5-Coder-0.5B" qwen_0.5B
+docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/data/plots" plots
+docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/data/datasets" datasets
 docker volume create --driver local -o o=bind -o type=none -o device="${PROJECT_PATH}/src" src
 
 # Already installed locally (nvidia container toolkit for docker)
@@ -41,7 +43,7 @@ echo "Running docker..."
 # --ulimit memlock=-1 --ulimit stack=67108864
 # --ipc=host
 # --shm-size 16g
-docker run -v "src:/TRT-LLM/src" -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 --gpus=all --runtime=nvidia --entrypoint /bin/bash -it test
+docker run -v "src:/TRT-LLM/src" -v "qwen_0.5B:/TRT-LLM/models/qwen-0.5b" -v "plots:/TRT-LLM/plots" -v "datasets:/TRT-LLM/datasets" --ipc=host --ulimit memlock=-1 --ulimit stack=67108864 --gpus=all --runtime=nvidia --entrypoint /bin/bash -it test
 
 # Useful links:
 #   1080ti issues:
