@@ -102,4 +102,11 @@ RUN python3 -m pip install --upgrade tensorrt
 RUN hash -r
 RUN apt-get update --fix-missing
 
+COPY data/TensorRT-LLM/tensorrt_llm/llmapi/llm.py .
+RUN mv llm.py /usr/local/lib/python3.10/dist-packages/tensorrt_llm/llmapi
+# RUN mv llm.py TensorRT-LLM/tensorrt_llm/llmapi/
+
+COPY data/TensorRT-LLM/tensorrt_llm/executor.py .
+RUN mv executor.py /usr/local/lib/python3.10/dist-packages/tensorrt_llm
+
 # ./baselines/build/baselines --engine_path /TRT-LLM/models/qwen-0.5b/engine/ --input_file_path /TRT-LLM/TensorRT-LLM/examples/cpp/executor/inputTokens.csv

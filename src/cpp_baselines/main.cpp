@@ -16,7 +16,11 @@ void Metrics::init() {
     RPS = 0;
 }
 
-void Metrics::compute() {
+void Metrics::compute(bool isExcludeInputFromOutput) {
+    if (isExcludeInputFromOutput) {
+        totalOutputTokens -= totalInputTokens; // Is it the only true way?
+    }
+
     generationTime = endTime - startTime - TTFT;
     e2eLatency = generationTime + TTFT;
     ITL = abs(e2eLatency - TTFT) / (static_cast<float>(totalOutputTokens) - 1);
@@ -57,10 +61,11 @@ int main(int argc, char *argv[]) {
     auto executor =
         trt_executor::Executor(runtimeOptions.enginePath, trt_executor::ModelType::kDECODER_ONLY, executorConfig);
 
-    for (size_t cnt = 110; cnt < 501; cnt += 10) {
-        // const size_t n = std::max(100 * cnt, (size_t)1);
+    for (size_t cnt = 0; cnt < 101; cnt++) {
         const size_t n = 1;
-        const size_t m = std::max(10 * cnt, (size_t)1);
+        // const size_t n = std::max(100 * cnt, (size_t)1);
+        // const size_t m = 1024;
+        const size_t m = std::max(100 * cnt, (size_t)1);
 
         runtimeOptions.metrics.init();
         runtimeOptions.inputFilePath = "/TRT-LLM/datasets/" + std::to_string(n) + "_" + std::to_string(m) + ".csv";

@@ -21,7 +21,7 @@ struct Metrics {
     explicit Metrics() { init(); }
 
     void init();
-    void compute();
+    void compute(bool isExcludeInputFromOutput = false);
     void display(const std::string &filePath = "") const;
 
     ~Metrics() = default;
