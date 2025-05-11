@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (executor.canEnqueueRequests()) {
+            executor.getKVCacheEventManager()->get()->getLatestEvents()[0].data.emplace
             auto requestIds = enqueueRequests(runtimeOptions, executor);
             auto outputTokens = waitForResponses(runtimeOptions, requestIds, executor);
             runtimeOptions.metrics.endTime = getTimeInMs();

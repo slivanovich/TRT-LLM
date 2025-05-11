@@ -90,6 +90,7 @@ def main():
 
     metrics = Metrics()
     llm = LLM(model="/TRT-LLM/models/qwen-0.5b/engine", tokenizer="/TRT-LLM/models/qwen-0.5b")
+    llm._executor.
     sampling_params = SamplingParams(min_tokens=1024, max_tokens=1024, exclude_input_from_output=False, beam_width=1, return_perf_metrics=True)
 
     while n < 10001 and m < 9001:
